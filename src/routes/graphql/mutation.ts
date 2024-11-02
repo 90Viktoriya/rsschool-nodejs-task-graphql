@@ -1,10 +1,11 @@
-import { GraphQLObjectType } from "graphql";
+import { GraphQLObjectType, GraphQLString } from "graphql";
 import { postType } from "./types/posts.js";
 import { CreatePostInput } from "./inputs/posts.js";
 import { CreateUserInput } from "./inputs/users.js";
 import { userType } from "./types/users.js";
 import { profileType } from "./types/profiles.js";
 import { CreateProfileInput } from "./inputs/profiles.js";
+import { UUIDType } from "./types/uuid.js";
 
 export const Mutations = new GraphQLObjectType({
   name: "Mutations",
@@ -18,6 +19,18 @@ export const Mutations = new GraphQLObjectType({
           })
         }
     },
+    deletePost: {
+      type: GraphQLString,
+      args: { id: { type: UUIDType}},
+      resolve: async (_, args, context) => {
+        await context.post.delete({
+          where: {
+            id: args.id,
+          },
+        });
+        return '204: success'
+      }
+    },
     createUser: {
       type: userType,
       args: { dto: { type: CreateUserInput}},
@@ -27,6 +40,18 @@ export const Mutations = new GraphQLObjectType({
           });
         }
     },
+    deleteUser: {
+      type: GraphQLString,
+      args: { id: { type: UUIDType}},
+      resolve: async (_, args, context) => {
+        await context.user.delete({
+          where: {
+            id: args.id,
+          },
+        });
+        return '204: success'
+      }
+    },
     createProfile: {
       type: profileType,
       args: { dto: { type: CreateProfileInput}},
@@ -35,5 +60,17 @@ export const Mutations = new GraphQLObjectType({
             data: args.dto,
           });
         }
-    }
+    },
+    deleteProfile: {
+      type: GraphQLString,
+      args: { id: { type: UUIDType}},
+      resolve: async (_, args, context) => {
+        await context.profile.delete({
+          where: {
+            id: args.id,
+          },
+        });
+        return '204: success'
+      }
+    },
   }});
