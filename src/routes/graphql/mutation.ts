@@ -1,10 +1,10 @@
 import { GraphQLObjectType, GraphQLString } from "graphql";
 import { postType } from "./types/posts.js";
-import { CreatePostInput } from "./inputs/posts.js";
-import { CreateUserInput } from "./inputs/users.js";
+import { ChangePostInput, CreatePostInput } from "./inputs/posts.js";
+import { ChangeUserInput, CreateUserInput } from "./inputs/users.js";
 import { userType } from "./types/users.js";
 import { profileType } from "./types/profiles.js";
-import { CreateProfileInput } from "./inputs/profiles.js";
+import { ChangeProfileInput, CreateProfileInput } from "./inputs/profiles.js";
 import { UUIDType } from "./types/uuid.js";
 
 export const Mutations = new GraphQLObjectType({
@@ -31,6 +31,19 @@ export const Mutations = new GraphQLObjectType({
         return '204: success'
       }
     },
+    changePost : {
+      type: postType,
+      args: { 
+        id: { type: UUIDType},
+        dto: { type: ChangePostInput}
+      },
+      resolve: async(_, args, context) => {
+        return await context.post.update({
+          where: { id: args.id },
+          data: args.dto,
+        });
+      }
+    },
     createUser: {
       type: userType,
       args: { dto: { type: CreateUserInput}},
@@ -52,6 +65,19 @@ export const Mutations = new GraphQLObjectType({
         return '204: success'
       }
     },
+    changeUser : {
+      type: userType,
+      args: { 
+        id: { type: UUIDType},
+        dto: { type: ChangeUserInput}
+      },
+      resolve: async(_, args, context) => {
+        return await context.user.update({
+          where: { id: args.id },
+          data: args.dto,
+        });
+      }
+    },
     createProfile: {
       type: profileType,
       args: { dto: { type: CreateProfileInput}},
@@ -71,6 +97,19 @@ export const Mutations = new GraphQLObjectType({
           },
         });
         return '204: success'
+      }
+    },
+    changeProfile : {
+      type: postType,
+      args: { 
+        id: { type: UUIDType},
+        dto: { type: ChangeProfileInput}
+      },
+      resolve: async(_, args, context) => {
+        return await context.profile.update({
+          where: { id: args.id },
+          data: args.dto,
+        });
       }
     },
   }});
