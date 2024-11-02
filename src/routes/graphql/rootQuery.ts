@@ -10,7 +10,7 @@ export const RootQuery = new GraphQLObjectType({
   fields: {
     users: {
       type: new GraphQLList(userType),
-      resolve: async(_, args, context) => {
+      resolve: async(_, __, context) => {
         return await context.user.findMany();
       }
     },

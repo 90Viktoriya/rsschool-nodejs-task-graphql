@@ -17,47 +17,32 @@ export const userType = new GraphQLObjectType({
     },
     posts: {
       type: new GraphQLList(postType),
-      args: {
-        id: {
-          type: UUIDType,
-        },
-      },
-      resolve: async (_, args, context) => {
+      resolve: async (parent, _, context) => {
         return await context.post.findMany({
           where: {
-            authorId: args.id,
+            authorId: parent.id,
           },
         });
       },
     },
-    profiles: {
+    profile: {
       type: profileType,
-      args: {
-        id: {
-          type: UUIDType,
-        },
-      },
-      resolve: async (_, args, context) => {
+      resolve: async (parent, _, context) => {
         return await context.profile.findUnique({
           where: {
-            userId: args.id,
+            userId: parent.id,
           },
         });
       }
     },
     subscribedToUser: {
-      type: profileType,
-      args: {
-        id: {
-          type: UUIDType,
-        },
-      },
-      resolve: async (_, args, context) => {
+      type: new GraphQLList(userType),
+      resolve: async (parent, _, context) => {
         return await context.user.findMany({
           where: {
             userSubscribedTo: {
               some: {
-                authorId: args.id,
+                authorId: parent.id,
               },
             },
           },
@@ -65,18 +50,18 @@ export const userType = new GraphQLObjectType({
       }
     },
     userSubscribedTo: {
-      type: profileType,
+      type: new GraphQLList(userType),
       args: {
         id: {
           type: UUIDType,
         },
       },
-      resolve: async (_, args, context) => {
+      resolve: async (parent, _, context) => {
         return await context.user.findMany({
           where: {
             subscribedToUser: {
               some: {
-                subscriberId: args.id,
+                subscriberId: parent.id,
               },
             },
           },
