@@ -1,71 +1,56 @@
-import { GraphQLFloat, GraphQLList, GraphQLObjectType, GraphQLString } from "graphql";
+import { GraphQLFloat, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLString } from "graphql";
 import { UUIDType } from "./uuid.js";
 import { postType } from "./posts.js";
 import { profileType } from "./profiles.js";
+import { GraphQLContext } from "./context.js";
 
 export const userType = new GraphQLObjectType({ 
   name: 'User',
   fields: () => ({
     id: {
-      type: UUIDType,
+      type: new GraphQLNonNull(UUIDType),
     },
     name: {
-      type: GraphQLString
+      type: new GraphQLNonNull(GraphQLString)
     },
     balance: {
-      type: GraphQLFloat
+      type: new GraphQLNonNull(GraphQLFloat)
     },
     posts: {
-      type: new GraphQLList(postType),
-      resolve: async (parent, _, context) => {
-        return await context.post.findMany({
-          where: {
-            authorId: parent.id,
-          },
-        });
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(postType))),
+      resolve: async (parent, _, context: GraphQLContext) => {
+        return await context.dataLoader.posts.load(parent.id);
       },
     },
     profile: {
       type: profileType,
       resolve: async (parent, _, context) => {
-        return await context.profile.findUnique({
-          where: {
-            userId: parent.id,
-          },
-        });
-      }
+        return await context.dataLoader.profiles.load(parent.id);
+      },
     },
     subscribedToUser: {
-      type: new GraphQLList(userType),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(userType))),
       resolve: async (parent, _, context) => {
-        return await context.user.findMany({
-          where: {
-            userSubscribedTo: {
-              some: {
-                authorId: parent.id,
-              },
-            },
-          },
-        })
+        if (!parent.subscribedToUser) {
+          return await context.dataLoader.subscribedToUser.load(parent.id);
+        }
+        const subscriberId = parent.subscribedToUser.map((subs) => subs.subscriberId);
+        return await context.dataLoader.users.loadMany(subscriberId);
       }
     },
     userSubscribedTo: {
-      type: new GraphQLList(userType),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(userType))),
       args: {
         id: {
           type: UUIDType,
         },
       },
       resolve: async (parent, _, context) => {
-        return await context.user.findMany({
-          where: {
-            subscribedToUser: {
-              some: {
-                subscriberId: parent.id,
-              },
-            },
-          },
-        })
+        if (!parent.userSubscribedTo) {
+          return await context.dataLoader.userSubscribedTo.load(parent.id);
+        }
+        const authorIds = parent.userSubscribedTo.map((user) => user.authorId);
+        return await context.dataLoader.users.loadMany(authorIds);
       }
     },
   })});
