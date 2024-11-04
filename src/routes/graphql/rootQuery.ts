@@ -5,7 +5,7 @@ import { memberTypeType, MemberTypeIdType } from "./types/member-types.js";
 import { postType } from "./types/posts.js";
 import { profileType } from "./types/profiles.js";
 import { GraphQLContext } from "./types/context.js";
-import { parseResolveInfo } from "graphql-parse-resolve-info";
+import { parseResolveInfo, ResolveTree, simplifyParsedResolveInfoFragmentWithType } from "graphql-parse-resolve-info";
 
 export const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
@@ -13,16 +13,28 @@ export const RootQuery = new GraphQLObjectType({
     users: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(userType))),
       resolve: async(_, __, context: GraphQLContext, resolveInfo ) => {
-        const parsedResolveInfoFragment = parseResolveInfo(resolveInfo);
-        const fields = parsedResolveInfoFragment?.fieldsByTypeName.userType;
+        const parsedResolveInfoFragment = parseResolveInfo(resolveInfo) as ResolveTree;
+        const { fields } = simplifyParsedResolveInfoFragmentWithType(
+          parsedResolveInfoFragment,
+          userType,
+        );
         const include = {
-          userSubscribedTo: !!fields && 'userSubscribedTo' in fields,
-          subscribedToUser: !!fields && 'subscribedToUser' in fields
+          userSubscribedTo: 'userSubscribedTo' in fields,
+          subscribedToUser: 'subscribedToUser' in fields
         };
-        return await context.prisma.user.findMany({ include });
-        /*const users = await context.prisma.user.findMany({ include });
-        users.forEach((user) => context.dataLoader.users.prime(user.id, user));
-        return users;*/
+        const users = await context.prisma.user.findMany({ include });
+        
+        users.forEach((user) => {
+          if (include.userSubscribedTo) {
+            const authors = users.filter((item) =>  item.userSubscribedTo.some((subscriber) => subscriber.authorId === user.id));
+            context.dataLoader.userSubscribedTo.prime(user.id, authors);
+          }
+          if (include.subscribedToUser) {
+            const subscribers = users.filter((item) =>  item.subscribedToUser.some((subscriber) => subscriber.subscriberId === user.id));
+            context.dataLoader.userSubscribedTo.prime(user.id, subscribers);
+          }
+        });
+        return users;
       }
     },
     user: {
@@ -35,10 +47,9 @@ export const RootQuery = new GraphQLObjectType({
    memberTypes: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(memberTypeType))),
       resolve: async(_, __, context) => {
-        return await context.prisma.memberType.findMany();
-       /* const memberTypes = await context.prisma.memberType.findMany();
+        const memberTypes = await context.prisma.memberType.findMany();
         memberTypes.forEach((memberType) => context.dataLoader.memberTypes.prime(memberType.id, memberType));
-        return memberTypes;*/
+        return memberTypes;
       }
     },
     memberType: {
@@ -55,10 +66,9 @@ export const RootQuery = new GraphQLObjectType({
     posts: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(postType))),
       resolve: async(_, __, context) => {
-        return await context.prisma.post.findMany();
-        /*const posts = await context.prisma.post.findMany();
-        posts.forEach((post) => context.dataLoader.posts.prime(post.id, post));
-        return posts;*/
+        const posts = await context.prisma.post.findMany();
+        posts.forEach((post) => context.dataLoader.posts.prime(post.id, [post]));
+        return posts;
       }
     },
     post: {
@@ -75,10 +85,9 @@ export const RootQuery = new GraphQLObjectType({
     profiles: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(profileType))),
       resolve: async(_, __, context) => {
-        return await context.prisma.profile.findMany();
-        /*const profiles = await context.prisma.profile.findMany();
+        const profiles = await context.prisma.profile.findMany();
         profiles.forEach((profile) => context.dataLoader.profiles.prime(profile.id, profile));
-        return profiles;*/
+        return profiles;
       }
     },
     profile: {

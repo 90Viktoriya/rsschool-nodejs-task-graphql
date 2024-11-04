@@ -31,11 +31,7 @@ export const userType = new GraphQLObjectType({
     subscribedToUser: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(userType))),
       resolve: async (parent, _, context) => {
-        if (!parent.subscribedToUser) {
-          return await context.dataLoader.subscribedToUser.load(parent.id);
-        }
-        const subscriberId = parent.subscribedToUser.map((subs) => subs.subscriberId);
-        return await context.dataLoader.users.loadMany(subscriberId);
+        return await context.dataLoader.subscribedToUser.load(parent.id);
       }
     },
     userSubscribedTo: {
@@ -46,11 +42,7 @@ export const userType = new GraphQLObjectType({
         },
       },
       resolve: async (parent, _, context) => {
-        if (!parent.userSubscribedTo) {
-          return await context.dataLoader.userSubscribedTo.load(parent.id);
-        }
-        const authorIds = parent.userSubscribedTo.map((user) => user.authorId);
-        return await context.dataLoader.users.loadMany(authorIds);
+        return await context.dataLoader.userSubscribedTo.load(parent.id);
       }
     },
   })});
