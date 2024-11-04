@@ -31,7 +31,7 @@ export const RootQuery = new GraphQLObjectType({
           }
           if (include.subscribedToUser) {
             const subscribers = users.filter((item) =>  item.subscribedToUser.some((subscriber) => subscriber.subscriberId === user.id));
-            context.dataLoader.userSubscribedTo.prime(user.id, subscribers);
+            context.dataLoader.subscribedToUser.prime(user.id, subscribers);
           }
         });
         return users;
